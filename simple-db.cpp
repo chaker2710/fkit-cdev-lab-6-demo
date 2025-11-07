@@ -1,4 +1,3 @@
-#include <boost/pfr.hpp>
 #include <fstream>
 #include <string>
 #include <type_traits>
@@ -13,8 +12,22 @@
  * If not, please visit https://opensource.org/licenses/MIT
  */
 namespace SimpleDB {
+
+// ------- Working with filename -------
 inline std::string filename = "data.bin";
 
+inline void setFilename(const std::string &file) {
+  filename = file;
+} // ! Function for changing the file name
+// -------------------------------------
+////
+////
+////
+////
+////
+// --- Reading and writing elements ---
+
+//!  Use this functions in the implementation of serialize your structs.
 template <typename T> void writeElement(std::ofstream &outFile, const T &item) {
   if constexpr (std::is_same_v<T, std::string>) {
     const size_t size = item.size();
@@ -25,6 +38,7 @@ template <typename T> void writeElement(std::ofstream &outFile, const T &item) {
   }
 }
 
+//!  Use this functions in the implementation of deserialize your structs.
 template <typename T> void readElement(std::ifstream &inFile, T &item) {
   if constexpr (std::is_same_v<T, std::string>) {
     size_t size;
@@ -35,8 +49,35 @@ template <typename T> void readElement(std::ifstream &inFile, T &item) {
     inFile.read(reinterpret_cast<char *>(&item), sizeof(T));
   }
 }
+// --------------------------------------
+////
+////
+////
+////
+////
+// -------------- Concepts --------------
+template <typename T>
+concept Serializable = requires(const T t, std::ofstream &out) {
+  { t.serialize(out) } -> std::same_as<void>;
+};
 
-template <typename T> void serialize(const std::vector<T> &data) {
+template <typename T>
+concept Deserializable = requires(T t, std::ifstream &in) {
+  { t.deserialize(in) } -> std::same_as<void>;
+};
+
+template <typename T>
+concept Archivable = Serializable<T> && Deserializable<T>; // Universal
+// --------------------------------------
+////
+////
+////
+////
+////
+// ----- Working with the database -----
+
+// ! Entry into the database. Accepts vector as a parameter, not returns.
+template <Archivable T> void serialize(const std::vector<T> &data) {
   std::ofstream outFile(filename, std::ios::binary);
   if (!outFile) {
     throw std::runtime_error("Could not open file for writing.");
@@ -47,19 +88,14 @@ template <typename T> void serialize(const std::vector<T> &data) {
                 sizeof(size)); // Write the size of the array first
 
   for (const T &item : data) {
-    if constexpr (std::is_class_v<T>) {
-      boost::pfr::for_each_field(item, [&outFile](const auto &field) {
-        writeElement(outFile, field);
-      });
-    } else {
-      writeElement(outFile, item); // Write the raw data of each item
-    }
+    item.serialize(outFile);
   }
 
   outFile.close();
 }
 
-template <typename T> std::vector<T> load() {
+// ! Unloading from the database. Does not accept parameters, returns a vector.
+template <Archivable T> std::vector<T> load() {
   std::ifstream inFile(filename, std::ios::binary);
   if (!inFile) {
     std::vector<T> data(0); // If the file does not exist,
@@ -72,16 +108,12 @@ template <typename T> std::vector<T> load() {
 
   std::vector<T> data(size);
   for (T &item : data) {
-    if constexpr (std::is_class_v<T>) {
-      boost::pfr::for_each_field(item, [&inFile](auto &field) {
-        readElement(inFile, field);
-      }); // Read the raw data of each item for structs
-    } else {
-      readElement(inFile, item);
-    }
+    item.deserialize(inFile); // Read the raw data of each item for structs
   }
 
   inFile.close();
   return data;
 }
+// --------------------------------------
+
 } // namespace SimpleDB
