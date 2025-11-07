@@ -1,4 +1,3 @@
-#pragma once
 #include <boost/pfr.hpp>
 #include <fstream>
 #include <string>
