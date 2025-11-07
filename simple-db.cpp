@@ -15,10 +15,6 @@ namespace SimpleDB {
 
 // ------- Working with filename -------
 inline std::string filename = "data.bin";
-
-inline void setFilename(const std::string &file) {
-  filename = file;
-} // ! Function for changing the file name
 // -------------------------------------
 ////
 ////
