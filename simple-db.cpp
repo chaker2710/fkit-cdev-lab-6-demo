@@ -15,10 +15,6 @@ namespace SimpleDB {
 
 // ------- Working with filename -------
 inline std::string filename = "data.bin";
-
-inline void setFilename(const std::string &file) {
-  filename = file;
-} // ! Function for changing the file name
 // -------------------------------------
 ////
 ////
@@ -55,29 +51,14 @@ template <typename T> void readElement(std::ifstream &inFile, T &item) {
 ////
 ////
 ////
-// -------------- Concepts --------------
-template <typename T>
-concept Serializable = requires(const T t, std::ofstream &out) {
-  { t.serialize(out) } -> std::same_as<void>;
-};
-
-template <typename T>
-concept Deserializable = requires(T t, std::ifstream &in) {
-  { t.deserialize(in) } -> std::same_as<void>;
-};
-
-template <typename T>
-concept Archivable = Serializable<T> && Deserializable<T>; // Universal
-// --------------------------------------
-////
-////
-////
-////
-////
 // ----- Working with the database -----
 
 // ! Entry into the database. Accepts vector as a parameter, not returns.
-template <Archivable T> void serialize(const std::vector<T> &data) {
+template <typename T> void serialize(const std::vector<T> &data) {
+  static_assert(std::is_same_v<decltype(std::declval<const T>().serialize(
+                                   std::declval<std::ofstream &>())),
+                               void>,
+                "Your structure must contain the serialize method");
   std::ofstream outFile(filename, std::ios::binary);
   if (!outFile) {
     throw std::runtime_error("Could not open file for writing.");
@@ -95,7 +76,11 @@ template <Archivable T> void serialize(const std::vector<T> &data) {
 }
 
 // ! Unloading from the database. Does not accept parameters, returns a vector.
-template <Archivable T> std::vector<T> load() {
+template <typename T> std::vector<T> load() {
+  static_assert(std::is_same_v<decltype(std::declval<T>().deserialize(
+                                   std::declval<std::ifstream &>())),
+                               void>,
+                "Your structure must contain the deserialize method.");
   std::ifstream inFile(filename, std::ios::binary);
   if (!inFile) {
     std::vector<T> data(0); // If the file does not exist,
