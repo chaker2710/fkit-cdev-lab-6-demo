@@ -1,22 +1,21 @@
 #include "simple-db.cpp"
 #include <iostream>
 
-struct MyStruct {
+struct MyStruct
+{
   int id;
   float value;
 
-  void serialize(std::ofstream &out) const {
-    SimpleDB::writeElement(out, id);
-    SimpleDB::writeElement(out, value);
-  }
-
-  void deserialize(std::ifstream &in) {
-    SimpleDB::readElement(in, id);
-    SimpleDB::readElement(in, value);
+  // !!! IMPORTANT: This func is required in your struct
+  void setFields(SimpleDB::FieldStream &fs)
+  {
+    fs.process(id);
+    fs.process(value);
   }
 };
-
-char resolveAction() {
+  
+char resolveAction()
+{
   char input;
   std::cout << "Select an action:" << std::endl;
   std::cout << "1. Add item" << std::endl;
@@ -32,7 +31,8 @@ char resolveAction() {
   return input;
 }
 
-void handleAddAction(std::vector<MyStruct> &data) {
+void handleAddAction(std::vector<MyStruct> &data)
+{
   MyStruct item{};
   std::cout << "Enter ID: ";
   std::cin >> item.id;
@@ -46,36 +46,45 @@ void handleAddAction(std::vector<MyStruct> &data) {
   std::cout << "Item added successfully." << std::endl;
 }
 
-void showItem(const MyStruct item) {
+void showItem(const MyStruct item)
+{
   std::cout << "ID: " << item.id << ", Value: " << item.value << std::endl;
 }
 
-void handleShowAction(std::vector<MyStruct> &data) {
-  for (const MyStruct &item : data) {
+void handleShowAction(std::vector<MyStruct> &data)
+{
+  for (const MyStruct &item : data)
+  {
     showItem(item);
   }
 }
 
-void handleDeleteAction(std::vector<MyStruct> &data) {
+void handleDeleteAction(std::vector<MyStruct> &data)
+{
   // TODO: Implement
   // !!! IMPORTANT: Serialize the data after deleting an item
   SimpleDB::serialize(data);
 }
 
-void handleFilterAction(std::vector<MyStruct> &data) {
+void handleFilterAction(std::vector<MyStruct> &data)
+{
   std::vector<MyStruct> filteredData;
   // TODO: Implement
 }
 
-void handleSortAction(std::vector<MyStruct> &data) {
+void handleSortAction(std::vector<MyStruct> &data)
+{
   // TODO: Implement
 }
 
-int main() {
+int main()
+{
   std::vector<MyStruct> data = SimpleDB::load<MyStruct>();
 
-  while (true) {
-    switch (resolveAction()) {
+  while (true)
+  {
+    switch (resolveAction())
+    {
     case '1':
       handleAddAction(data);
       break;
